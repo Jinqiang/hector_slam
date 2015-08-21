@@ -92,7 +92,7 @@ public:
 
 
       for (int i = 0; i < numIter; ++i) {
-        //std::cout << "\nest:\n" << estimate;
+        // std::cout << "\n est: " << i << "in" << numIter << std::endl;
 
         estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
         //notConverged = estimateTransformationLogLh(estimate, gridMapUtil, dataContainer);
@@ -200,7 +200,6 @@ protected:
 
     if ((H(0, 0) != 0.0f) && (H(1, 1) != 0.0f)) {
 
-
       //H += Eigen::Matrix3f::Identity() * 1.0f;
       Eigen::Vector3f searchDir (H.inverse() * dTr);
 
@@ -213,8 +212,10 @@ protected:
         searchDir[2] = -0.2f;
         std::cout << "SearchDir angle change too large\n";
       }
+      Eigen::Vector3f tmpPose = estimate; 
 
       updateEstimatedPose(estimate, searchDir);
+      // updateEstimatedPoseCompound(estimate, searchDir);
       return true;
     }
     return false;
@@ -222,8 +223,46 @@ protected:
 
   void updateEstimatedPose(Eigen::Vector3f& estimate, const Eigen::Vector3f& change)
   {
+    // std::cout << "original pose " << estimate.transpose() << std::endl;
+
     estimate += change;
+    // std::cout << "up 1 pose " << estimate.transpose() << std::endl;
   }
+
+  // Jin: use compount operation instead. 
+  void updateEstimatedPoseCompound(Eigen::Vector3f& estimate, const Eigen::Vector3f& change)
+  { 
+    // float angleWorldCoords = util::toRad(30.0f);
+    // Eigen::Vector2f matrix_translation(estimate[0], estimate[1]);
+    // Eigen::Rotation2Df   matrix_rotation(estimate[2]);
+
+    // // std::cout << "original pose 2 " << estimate.transpose() << std::endl;
+
+    // Eigen::Vector2f change_translation2(1,1);
+
+    // Eigen::Vector2f new_translation = matrix_rotation * change_translation2 + matrix_translation;
+
+    // estimate[0] = new_translation[0];
+    // estimate[1] = new_translation[1];
+    // estimate[2] += angleWorldCoords;
+
+    Eigen::Vector2f      matrix_translation(estimate[0], estimate[1]);
+    Eigen::Rotation2Df   matrix_rotation(estimate[2]);
+
+    // std::cout << "original pose 2 " << estimate.transpose() << std::endl;
+
+    Eigen::Vector2f change_translation2(change[0], change[1]);
+
+    Eigen::Vector2f new_translation = matrix_rotation * change_translation2 + matrix_translation;
+
+    estimate[0] = new_translation[0];
+    estimate[1] = new_translation[1];
+    estimate[2] +=  change[2];
+    // estimate[2] = util::normalize_angle(estimate[2]);
+    // float tmpAng = estimate[2] + change[2] ;
+    std::cout << "up 2 pose " <<  estimate.transpose() << std::endl;
+  }
+
 
   void drawScan(const Eigen::Vector3f& pose, const ConcreteOccGridMapUtil& gridMapUtil, const DataContainer& dataContainer)
   {
